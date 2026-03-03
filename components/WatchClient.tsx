@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, ChevronDown, ChevronUp, SkipForward, Loader2, AlertTriangle, RefreshCw, Film, Tv } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp, SkipForward, Loader2, AlertTriangle, Tv } from "lucide-react";
 import { tmdb, IMG, rating, type TVDetail, type MovieDetail, type Episode, type SeasonDetail } from "@/lib/tmdb";
 import { PROVIDERS, movieEmbed, tvEmbed, type EmbedProvider } from "@/lib/embed";
 import clsx from "clsx";
