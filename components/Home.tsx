@@ -185,7 +185,7 @@ function SearchModal({ onClose }: { onClose: () => void }) {
       setLoading(true);
       try {
         const data = await tmdb.search(q.trim());
-        setResults((data.results ?? []).filter(r => r.media_type !== "person" && r.poster_path).slice(0, 12));
+        setResults((data.results ?? []).filter(r => (r.media_type as string) !== "person" && r.poster_path).slice(0, 12));
       } catch { setResults([]); } finally { setLoading(false); }
     }, 350);
     return () => clearTimeout(t);

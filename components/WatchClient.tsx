@@ -35,7 +35,7 @@ function Player({ src, title }: { src: string; title: string }) {
         className="absolute inset-0 w-full h-full"
         allowFullScreen
         allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
-        sandbox="allow-scripts allow-same-origin allow-presentation" 
+        sandbox="allow-scripts allow-same-origin allow-presentation"
         onLoad={() => setLoading(false)}
         onError={() => { setLoading(false); setError(true); }}
         referrerPolicy="no-referrer"
@@ -78,7 +78,7 @@ function EpisodeList({ episodes, currentEp, onSelect }: {
 export default function WatchClient({ type, id, season: initSeason, episode: initEpisode }:
   { type: "movie" | "tv"; id: number; season: number; episode: number }) {
 
-  const [provider, setProvider] = useState<EmbedProvider>("vidsrc");
+  const [provider, setProvider] = useState<EmbedProvider>("vidsrcme");
   const [season, setSeason] = useState(initSeason);
   const [episode, setEpisode] = useState(initEpisode);
   const [showData, setShowData] = useState<TVDetail | null>(null);
@@ -92,13 +92,13 @@ export default function WatchClient({ type, id, season: initSeason, episode: ini
   // Fetch metadata
   useEffect(() => {
     if (type === "movie") {
-      tmdb.movie(id).then(setMovieData).catch(() => {});
+      tmdb.movie(id).then(setMovieData).catch(() => { });
       return;
     }
     setLoadingShow(true);
     tmdb.tv(id)
       .then(data => { setShowData(data); })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoadingShow(false));
   }, [type, id]);
 
