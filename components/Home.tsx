@@ -325,16 +325,16 @@ export default function Home() {
 
         setHero(heroPool);
         setRows([
-          { rowTitle: "🔥 Trending This Week",       items: v(trendingM),  type: "movie", icon: TrendingUp },
-          { rowTitle: "📺 Trending TV Shows",         items: v(trendingTV), type: "tv",    icon: TrendingUp },
-          { rowTitle: "🎬 Bollywood Blockbusters",    items: v(hindiM),     type: "movie", icon: Film },
-          { rowTitle: "📺 Hindi TV Shows & Serials",  items: v(hindiTV),    type: "tv",    icon: Tv },
-          { rowTitle: "⭐ Bollywood Classics",        items: v(hindiTop),   type: "movie", icon: Award },
-          { rowTitle: "🎭 Now Playing in Theatres",   items: v(nowP),       type: "movie", icon: Film },
-          { rowTitle: "🏆 Top Rated Movies",          items: v(topM),       type: "movie", icon: Award },
-          { rowTitle: "🌍 Popular TV Shows",          items: v(popTV),      type: "tv",    icon: Tv },
-          { rowTitle: "🎥 Top Rated TV Shows",        items: v(topTV),      type: "tv",    icon: Award },
-          { rowTitle: "🍿 Popular Movies",            items: v(popM),       type: "movie", icon: Film },
+          { rowTitle: " Trending This Week",       items: v(trendingM),  type: "movie", icon: TrendingUp },
+          { rowTitle: " Trending TV Shows",         items: v(trendingTV), type: "tv",    icon: TrendingUp },
+          { rowTitle: " Bollywood Blockbusters",    items: v(hindiM),     type: "movie", icon: Film },
+          { rowTitle: " Hindi TV Shows & Serials",  items: v(hindiTV),    type: "tv",    icon: Tv },
+          { rowTitle: " Bollywood Classics",        items: v(hindiTop),   type: "movie", icon: Award },
+          { rowTitle: " Now Playing in Theatres",   items: v(nowP),       type: "movie", icon: Film },
+          { rowTitle: " Top Rated Movies",          items: v(topM),       type: "movie", icon: Award },
+          { rowTitle: " Popular TV Shows",          items: v(popTV),      type: "tv",    icon: Tv },
+          { rowTitle: " Top Rated TV Shows",        items: v(topTV),      type: "tv",    icon: Award },
+          { rowTitle: " Popular Movies",            items: v(popM),       type: "movie", icon: Film },
         ]);
         // suppress unused variable warning for dayPage
         void dayPage;
