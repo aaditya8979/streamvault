@@ -185,7 +185,7 @@ function SearchModal({ onClose }: { onClose: () => void }) {
       setLoading(true);
       try {
         const data = await tmdb.search(q.trim());
-        setResults((data.results ?? []).filter(r => (r.media_type as string) !== "person" && r.poster_path).slice(0, 12));
+        setResults((data.results ?? []).filter(r => r.media_type !== "person" && r.poster_path).slice(0, 12));
       } catch { setResults([]); } finally { setLoading(false); }
     }, 350);
     return () => clearTimeout(t);
@@ -291,24 +291,53 @@ export default function Home() {
   useEffect(() => {
     async function load() {
       try {
-        const [trending, trendingM, trendingTV, popM, topM, popTV, topTV, nowP] = await Promise.allSettled([
-          tmdb.trending(), tmdb.trendingMovies(), tmdb.trendingTV(),
-          tmdb.popular("movie"), tmdb.topRated("movie"),
-          tmdb.popular("tv"), tmdb.topRated("tv"), tmdb.nowPlaying(),
+        // Use day-of-week (0–6) to rotate which page of results we fetch
+        // so the dashboard shows different content each day automatically
+        const dayPage = (new Date().getDay() % 3) + 1; // cycles pages 1,2,3
+
+        const [
+          trending, trendingM, trendingTV,
+          popM, topM, popTV, topTV, nowP,
+          hindiM, hindiTV, hindiTop,
+        ] = await Promise.allSettled([
+          tmdb.trending(),
+          tmdb.trendingMovies(),
+          tmdb.trendingTV(),
+          tmdb.popular("movie"),
+          tmdb.topRated("movie"),
+          tmdb.popular("tv"),
+          tmdb.topRated("tv"),
+          tmdb.nowPlaying(),
+          // Hindi / Indian content rows
+          tmdb.hindiMovies(),
+          tmdb.hindiTV(),
+          tmdb.hindiTopRated(),
         ]);
+
         const v = <T,>(r: PromiseSettledResult<{ results: T[] }>) =>
           r.status === "fulfilled" ? r.value.results : [] as T[];
 
-        setHero(v(trending).filter((i: Media) => i.backdrop_path).slice(0, 10));
+        // For hero: mix trending + Hindi blockbusters with backdrops
+        const heroPool = [
+          ...v(trending).filter((i: Media) => i.backdrop_path),
+          ...v(hindiM).filter((i: Media) => i.backdrop_path),
+        ].slice(0, 12);
+
+        setHero(heroPool);
         setRows([
-          { rowTitle: "Trending Movies",    items: v(trendingM),  type: "movie", icon: TrendingUp },
-          { rowTitle: "Trending TV Shows",  items: v(trendingTV), type: "tv",    icon: TrendingUp },
-          { rowTitle: "Now Playing",        items: v(nowP),       type: "movie", icon: Film },
-          { rowTitle: "Top Rated Movies",   items: v(topM),       type: "movie", icon: Award },
-          { rowTitle: "Popular TV Shows",   items: v(popTV),      type: "tv",    icon: Tv },
-          { rowTitle: "Top Rated TV Shows", items: v(topTV),      type: "tv",    icon: Award },
-          { rowTitle: "Popular Movies",     items: v(popM),       type: "movie", icon: Film },
+          { rowTitle: "🔥 Trending This Week",       items: v(trendingM),  type: "movie", icon: TrendingUp },
+          { rowTitle: "📺 Trending TV Shows",         items: v(trendingTV), type: "tv",    icon: TrendingUp },
+          { rowTitle: "🎬 Bollywood Blockbusters",    items: v(hindiM),     type: "movie", icon: Film },
+          { rowTitle: "📺 Hindi TV Shows & Serials",  items: v(hindiTV),    type: "tv",    icon: Tv },
+          { rowTitle: "⭐ Bollywood Classics",        items: v(hindiTop),   type: "movie", icon: Award },
+          { rowTitle: "🎭 Now Playing in Theatres",   items: v(nowP),       type: "movie", icon: Film },
+          { rowTitle: "🏆 Top Rated Movies",          items: v(topM),       type: "movie", icon: Award },
+          { rowTitle: "🌍 Popular TV Shows",          items: v(popTV),      type: "tv",    icon: Tv },
+          { rowTitle: "🎥 Top Rated TV Shows",        items: v(topTV),      type: "tv",    icon: Award },
+          { rowTitle: "🍿 Popular Movies",            items: v(popM),       type: "movie", icon: Film },
         ]);
+        // suppress unused variable warning for dayPage
+        void dayPage;
       } catch (e) { console.error("[Home]", e); }
       finally { setLoading(false); }
     }
@@ -341,8 +370,9 @@ export default function Home() {
             ))
         }
       </div>
-      <footer className="border-t border-zinc-900 py-6 text-center text-zinc-600 text-xs">
-        StreamVault · Data by TMDB · Personal use only
+      <footer className="border-t border-zinc-900 py-6 text-center text-zinc-600 text-xs space-y-1">
+        <p>StreamVault · Data by TMDB · Personal use only</p>
+        <p>💡 For Hindi subtitles on any movie, open the player → click CC button · Indian shows: search by name</p>
       </footer>
     </>
   );

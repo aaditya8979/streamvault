@@ -1,7 +1,6 @@
 /**
  * TMDB Client — runs entirely in the browser.
  * No server. No timeouts. No AbortController conflicts.
- * Just plain fetch from the client with the public API key.
  */
 
 const KEY = () => {
@@ -38,6 +37,7 @@ export interface Media {
   first_air_date?: string;
   media_type?: "movie" | "tv";
   genre_ids?: number[];
+  original_language?: string;
 }
 
 export interface MovieDetail {
@@ -54,6 +54,7 @@ export interface MovieDetail {
   runtime: number | null;
   genres: { id: number; name: string }[];
   status: string;
+  original_language: string;
   credits: { cast: Cast[]; crew: Crew[] };
   videos: { results: Video[] };
   recommendations: { results: Media[] };
@@ -73,6 +74,7 @@ export interface TVDetail {
   number_of_episodes: number;
   genres: { id: number; name: string }[];
   status: string;
+  original_language: string;
   seasons: Season[];
   credits: { cast: Cast[]; crew: Crew[] };
   videos: { results: Video[] };
@@ -110,16 +112,36 @@ export interface Page<T> { results: T[]; total_pages: number; total_results: num
 // ─── API functions (all client-side) ────────────────────────────────────────
 
 export const tmdb = {
-  trending: () => get<Page<Media>>("/trending/all/week"),
-  trendingMovies: () => get<Page<Media>>("/trending/movie/week"),
-  trendingTV: () => get<Page<Media>>("/trending/tv/week"),
-  popular: (type: "movie" | "tv") => get<Page<Media>>(`/${type}/popular`),
-  topRated: (type: "movie" | "tv") => get<Page<Media>>(`/${type}/top_rated`),
-  nowPlaying: () => get<Page<Media>>("/movie/now_playing"),
-  search: (q: string, page = 1) => get<Page<Media>>("/search/multi", { query: q, page }),
-  movie: (id: number) => get<MovieDetail>(`/movie/${id}`, { append_to_response: "credits,videos,recommendations" }),
-  tv: (id: number) => get<TVDetail>(`/tv/${id}`, { append_to_response: "credits,videos,recommendations" }),
-  season: (id: number, s: number) => get<SeasonDetail>(`/tv/${id}/season/${s}`),
+  trending:      () => get<Page<Media>>("/trending/all/week"),
+  trendingMovies:() => get<Page<Media>>("/trending/movie/week"),
+  trendingTV:    () => get<Page<Media>>("/trending/tv/week"),
+  popular:       (type: "movie" | "tv") => get<Page<Media>>(`/${type}/popular`),
+  topRated:      (type: "movie" | "tv") => get<Page<Media>>(`/${type}/top_rated`),
+  nowPlaying:    () => get<Page<Media>>("/movie/now_playing"),
+  search:        (q: string, page = 1) => get<Page<Media>>("/search/multi", { query: q, page }),
+  movie:         (id: number) => get<MovieDetail>(`/movie/${id}`, { append_to_response: "credits,videos,recommendations" }),
+  tv:            (id: number) => get<TVDetail>(`/tv/${id}`, { append_to_response: "credits,videos,recommendations" }),
+  season:        (id: number, s: number) => get<SeasonDetail>(`/tv/${id}/season/${s}`),
+
+  // ─── Indian / Hindi content ───────────────────────────────────────────────
+  // Trending Bollywood movies (Hindi language)
+  hindiMovies:   () => get<Page<Media>>("/discover/movie", {
+    with_original_language: "hi",
+    sort_by: "popularity.desc",
+    "vote_count.gte": 50,
+  }),
+  // Popular Hindi TV shows (includes Ramayana, Indian serials etc.)
+  hindiTV:       () => get<Page<Media>>("/discover/tv", {
+    with_original_language: "hi",
+    sort_by: "popularity.desc",
+    "vote_count.gte": 10,
+  }),
+  // Bollywood top rated classics
+  hindiTopRated: () => get<Page<Media>>("/discover/movie", {
+    with_original_language: "hi",
+    sort_by: "vote_average.desc",
+    "vote_count.gte": 200,
+  }),
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

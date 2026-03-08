@@ -1,37 +1,73 @@
 /**
- * Embed URL builders — no API keys, no HLS.js, no Consumet.
- * Just reliable iframes. Multiple providers for fallback.
+ * vidsrc_cc  : vidsrc.cc — 4K, best library ✓
+ * autoembed  : autoembed.co — 1080p, wide library ✓
+ * embed_su   : embed.su — classic/old Bollywood ✓
  */
 
-// 1. Strictly define our 4 working providers
-export type EmbedProvider = "vidsrcme" | "autoembed" | "smashy" | "vidsrcpm";
+export type EmbedProvider = "vidsrc_cc" | "autoembed" | "embed_su";
 
-// 2. Movie URLs
-export function movieEmbed(tmdbId: number, provider: EmbedProvider = "vidsrcme"): string {
+export interface Provider {
+  id: EmbedProvider;
+  label: string;
+  badge: string;
+  badgeColor: string;
+  note: string;
+  hindiNote: string;
+}
+
+export function movieEmbed(tmdbId: number, provider: EmbedProvider = "vidsrc_cc", hindiMode = false): string {
   switch (provider) {
-    case "vidsrcme":  return `https://vidsrc.me/embed/movie?tmdb=${tmdbId}`;
-    case "autoembed": return `https://player.autoembed.cc/embed/movie/${tmdbId}`;
-    case "smashy":    return `https://player.smashy.stream/movie/${tmdbId}`;
-    case "vidsrcpm":  return `https://vidsrc.pm/embed/movie?tmdb=${tmdbId}`;
-    default:          return `https://vidsrc.me/embed/movie?tmdb=${tmdbId}`;
+    case "vidsrc_cc":
+      return hindiMode
+        ? `https://vidsrc.cc/v2/embed/movie/${tmdbId}?lang=hi`
+        : `https://vidsrc.cc/v2/embed/movie/${tmdbId}`;
+    case "autoembed":
+      return hindiMode
+        ? `https://autoembed.co/movie/tmdb/${tmdbId}?lang=hi`
+        : `https://autoembed.co/movie/tmdb/${tmdbId}`;
+    case "embed_su":
+      return `https://embed.su/embed/movie/${tmdbId}`;
   }
 }
 
-// 3. TV Show URLs (Fixed endpoints to specifically request TV data)
-export function tvEmbed(tmdbId: number, season: number, episode: number, provider: EmbedProvider = "vidsrcme"): string {
+export function tvEmbed(tmdbId: number, season: number, episode: number, provider: EmbedProvider = "vidsrc_cc", hindiMode = false): string {
   switch (provider) {
-    case "vidsrcme":  return `https://vidsrc.me/embed/tv?tmdb=${tmdbId}&season=${season}&episode=${episode}`;
-    case "autoembed": return `https://player.autoembed.cc/embed/tv/${tmdbId}/${season}/${episode}`;
-    case "smashy":    return `https://player.smashy.stream/tv/${tmdbId}?s=${season}&e=${episode}`;
-    case "vidsrcpm":  return `https://vidsrc.pm/embed/tv?tmdb=${tmdbId}&season=${season}&episode=${episode}`;
-    default:          return `https://vidsrc.me/embed/tv?tmdb=${tmdbId}&season=${season}&episode=${episode}`;
+    case "vidsrc_cc":
+      return hindiMode
+        ? `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${season}/${episode}?lang=hi`
+        : `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${season}/${episode}`;
+    case "autoembed":
+      return hindiMode
+        ? `https://autoembed.co/tv/tmdb/${tmdbId}-${season}-${episode}?lang=hi`
+        : `https://autoembed.co/tv/tmdb/${tmdbId}-${season}-${episode}`;
+    case "embed_su":
+      return `https://embed.su/embed/tv/${tmdbId}/${season}/${episode}`;
   }
 }
 
-// 4. UI Labels for your Server Switcher
-export const PROVIDERS: { id: EmbedProvider; label: string }[] = [
-  { id: "vidsrcme",   label: "Server 1 (VidSrc Me)" },
-  { id: "autoembed",  label: "Server 2 (AutoEmbed)" },
-  { id: "smashy",     label: "Server 3 (SmashyStream)" },
-  { id: "vidsrcpm",   label: "Server 4 (VidSrc PM)" },
+export const PROVIDERS: Provider[] = [
+  {
+    id: "vidsrc_cc",
+    label: "VidSrc CC",
+    badge: "4K",
+    badgeColor: "bg-purple-600",
+    note: "Best quality ✓",
+    hindiNote: "Hindi audio ✓",
+  },
+  {
+    id: "autoembed",
+    label: "AutoEmbed",
+    badge: "1080p",
+    badgeColor: "bg-blue-600",
+    note: "Wide library ✓",
+    hindiNote: "Hindi audio ✓",
+  },
+  {
+    id: "embed_su",
+    label: "EmbedSu",
+    badge: "HD",
+    badgeColor: "bg-green-600",
+    note: "Classic & old films ✓",
+    hindiNote: "Old Bollywood ✓",
+  },
 ];
