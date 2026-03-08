@@ -133,18 +133,18 @@ function Player({ src, title }: { src: string; title: string }) {
     setIframeKey(k => k + 1);
   };
 
-  useEffect(() => { resetPlayer(); }, [src]); // eslint-disable-line
+  useEffect(() => { resetPlayer(); }, [src]); // src change intentionally resets player
 
   useEffect(() => {
     const t = setInterval(() => { if (!document.hidden) resetPlayer(); }, AUTO_REFRESH_MS);
     return () => clearInterval(t);
-  }, [src]); // eslint-disable-line
+  }, [src]); // restart timer when src changes
 
   useEffect(() => {
     const fn = () => { if (!document.hidden) resetPlayer(); };
     document.addEventListener("visibilitychange", fn);
     return () => document.removeEventListener("visibilitychange", fn);
-  }, []); // eslint-disable-line
+  }, []); // mount/unmount only
 
   useEffect(() => {
     const fn = () => setIsFullscreen(!!document.fullscreenElement);
