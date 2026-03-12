@@ -36,3 +36,26 @@ body {
   animation: skeleton-pulse 1.5s ease-in-out infinite;
   border-radius: 8px;
 }
+
+/* ── Fullscreen: ensure the player container fills the screen completely ── */
+:fullscreen,
+:-webkit-full-screen,
+:-moz-full-screen,
+:-ms-fullscreen {
+  width: 100vw !important;
+  height: 100vh !important;
+  background: #000 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+:fullscreen iframe,
+:-webkit-full-screen iframe {
+  width: 100% !important;
+  height: 100% !important;
+  position: absolute;
+  inset: 0;
+}
+
+/* Reveal fullscreen button on player hover */
+.player-wrap:hover .fs-btn { opacity: 1 !important; }

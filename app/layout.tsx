@@ -3,8 +3,12 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: { default: "StreamVault", template: "%s — StreamVault" },
-  description: "Watch movies and TV shows for free.",
+  description: "Your personal streaming platform",
   robots: { index: false, follow: false },
+  icons: {
+    icon: "/logo.svg",
+    apple: "/logo.svg",
+  },
 };
 
 export const viewport: Viewport = { themeColor: "#09090b" };

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 52" width="240" height="52" role="img" aria-label="StreamVault">
+
+  <!-- Shield / Vault icon with red fill -->
+  <path d="M10 6 L26 2 L42 6 L42 24 C42 34 26 42 26 42 C26 42 10 34 10 24 Z" fill="#dc2626"/>
+  <!-- Play triangle inside shield -->
+  <polygon points="20,16 34,24 20,32" fill="white"/>
+
+  <!-- Stream — white bold -->
+  <text
+    x="52"
+    y="36"
+    font-family="'Arial Black', 'Helvetica Neue', Arial, sans-serif"
+    font-weight="900"
+    font-size="28"
+    fill="#ffffff"
+    letter-spacing="-1"
+  >Stream</text>
+
+  <!-- Vault — red bold -->
+  <text
+    x="147"
+    y="36"
+    font-family="'Arial Black', 'Helvetica Neue', Arial, sans-serif"
+    font-weight="900"
+    font-size="28"
+    fill="#dc2626"
+    letter-spacing="-1"
+  >Vault</text>
+
+</svg>
