@@ -65,17 +65,6 @@ function md5(str: string): string {
   return crypto.createHash("md5").update(str).digest("hex");
 }
 
-function _generateDeviceId(): string {
-  const chars: string[] = [];
-  for (let i = 0; i < 22; i++) {
-    if (Math.random() < 0.5) {
-      chars.push(String.fromCharCode(Math.floor(Math.random() * 10) + 48));
-    } else {
-      chars.push(String.fromCharCode(Math.floor(Math.random() * 6) + 97));
-    }
-  }
-  return chars.join("");
-}
 
 // ===================== TYPES =====================
 
