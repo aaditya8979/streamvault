@@ -6,7 +6,7 @@ import {
   Play, Info, Search, X, Star, ChevronLeft, ChevronRight,
   Tv, Film, TrendingUp, Award, Loader2,
 } from "lucide-react";
-import { tmdb, IMG, title, year, rating, type Media } from "@/lib/tmdb";
+import { tmdb, IMG, title, year, rating, type Media, type MovieDetail } from "@/lib/tmdb";
 import clsx from "clsx";
 
 // ─── Skeleton ──────────────────────────────────────────────────────────────

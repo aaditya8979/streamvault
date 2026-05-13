@@ -12,9 +12,9 @@
  *   GET /api/filmin?action=status                — P2P server status
  */
 import { NextRequest, NextResponse } from "next/server";
-import { getFilminClient, FilminClient } from "../../../lib/filmin";
+import { getFilminClient, FilminClient, type FilminVod } from "../../../lib/filmin";
 
-function vodToJson(v: { id: number; vod_name: string; vod_pic: string; vod_year: string; vod_area: string; vod_remarks: string; type_id: number; type_name: string }) {
+function vodToJson(v: FilminVod) {
   const mediaType = FilminClient.getMediaType(v);
   const tmdbQuery = FilminClient.getTmdbSearchQuery(v);
   return {
