@@ -35,7 +35,7 @@ export interface Media {
   vote_average: number;
   release_date?: string;
   first_air_date?: string;
-  media_type?: "movie" | "tv";
+  media_type?: "movie" | "tv" | "person";
   genre_ids?: number[];
   original_language?: string;
 }

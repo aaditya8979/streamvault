@@ -6,7 +6,7 @@ import {
   Play, Info, Search, X, Star, ChevronLeft, ChevronRight,
   Tv, Film, TrendingUp, Award, Loader2,
 } from "lucide-react";
-import { tmdb, IMG, title, year, rating, type Media } from "@/lib/tmdb";
+import { tmdb, IMG, title, year, rating, type Media, type MovieDetail } from "@/lib/tmdb";
 import clsx from "clsx";
 
 // ─── Skeleton ──────────────────────────────────────────────────────────────
@@ -185,7 +185,7 @@ function SearchModal({ onClose }: { onClose: () => void }) {
       setLoading(true);
       try {
         const data = await tmdb.search(q.trim());
-        setResults(((data.results ?? []) as any[]).filter((r: any) => r.media_type !== "person" && r.poster_path).slice(0, 12));
+        setResults((data.results || []).filter((r: Media) => r.media_type !== "person" && r.poster_path).slice(0, 12));
       } catch { setResults([]); } finally { setLoading(false); }
     }, 350);
     return () => clearTimeout(t);
@@ -279,6 +279,130 @@ function Navbar({ onSearch }: { onSearch: () => void }) {
   );
 }
 
+// ─── Continue Watching ────────────────────────────────────────────────────
+function ContinueWatching() {
+  const [items, setItems] = useState<{ mediaId: string; type: string; id: string; season?: string; episode?: string; time: number; updated: number }[]>([]);
+  const [details, setDetails] = useState<Record<string, { title: string; poster: string; duration?: number }>>({});
+
+  useEffect(() => {
+    try {
+      const entries: typeof items = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key?.startsWith("sv_resume_")) continue;
+        const mediaId = key.replace("sv_resume_", "");
+        const raw = localStorage.getItem(key);
+        if (!raw) continue;
+        
+        // Data is now stored as JSON: { time: number, updated: number }
+        let time = 0, updated = 0;
+        try {
+          const parsed = JSON.parse(raw);
+          time = parsed.time;
+          updated = parsed.updated || 0;
+        } catch {
+          time = parseFloat(raw); // fallback for old format
+        }
+
+        if (time < 10) continue; 
+
+        const parts = mediaId.match(/^(movie|tv)_(\d+)(?:_s(\d+)e(\d+))?$/);
+        if (!parts) continue;
+        entries.push({ mediaId, type: parts[1], id: parts[2], season: parts[3], episode: parts[4], time, updated });
+      }
+      // Sort by recency (updated timestamp)
+      entries.sort((a, b) => b.updated - a.updated);
+      setItems(entries.slice(0, 12));
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    items.forEach(async (item) => {
+      if (details[item.mediaId]) return;
+      try {
+        const data = item.type === "movie" ? await tmdb.movie(Number(item.id)) : await tmdb.tv(Number(item.id));
+        if (data) {
+          setDetails(prev => ({
+            ...prev,
+            [item.mediaId]: {
+              title: (data as Media).title || (data as Media).name || "Unknown",
+              poster: data.poster_path || "",
+              duration: item.type === "movie" ? ((data as MovieDetail).runtime ? (data as MovieDetail).runtime! * 60 : undefined) : undefined,
+            }
+          }));
+        }
+      } catch {}
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items]);
+
+  if (items.length === 0) return null;
+
+  return (
+    <section className="mb-10">
+      <div className="flex items-center gap-3 mb-4 px-4 sm:px-8">
+        <div className="p-1.5 bg-red-600 rounded-lg">
+          <Play className="w-4 h-4 text-white fill-white" />
+        </div>
+        <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">Continue Watching</h2>
+      </div>
+      <div className="flex gap-3 overflow-x-auto scrollbar-hide px-4 sm:px-8 pb-4">
+        {items.map(item => {
+          const d = details[item.mediaId];
+          const t = d?.title || "Loading...";
+          const poster = d?.poster;
+          const progress = d?.duration ? Math.min(100, (item.time / d.duration) * 100) : 0;
+          const watchUrl = item.type === "movie" 
+            ? `/watch/movie/${item.id}`
+            : `/watch/tv/${item.id}?s=${item.season || 1}&e=${item.episode || 1}`;
+
+          return (
+            <Link key={item.mediaId} href={watchUrl} className="flex-shrink-0 w-36 sm:w-44 group cursor-pointer">
+              <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800/50 shadow-2xl">
+                {poster ? (
+                  <Image src={IMG(poster, "w342")} alt={t} fill sizes="176px"
+                    className="object-cover transition-transform duration-700 group-hover:scale-110" />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Film className="w-8 h-8 text-zinc-700" />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent opacity-80" />
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
+                  <div className="bg-red-600 rounded-full p-3 shadow-xl scale-90 group-hover:scale-100 transition-transform">
+                    <Play className="w-5 h-5 text-white fill-white" />
+                  </div>
+                </div>
+                <div className="absolute top-2 left-2 px-2 py-0.5 bg-zinc-950/80 backdrop-blur-md border border-white/10 rounded text-[9px] font-black text-white uppercase tracking-widest">
+                  Resume
+                </div>
+                {/* Visual Progress Bar */}
+                <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/10">
+                  <div className="h-full bg-red-600 shadow-[0_0_8px_rgba(229,9,20,0.8)]" style={{ width: `${Math.max(3, progress || 10)}%` }} />
+                </div>
+              </div>
+              <div className="mt-3 px-1">
+                <p className="text-sm font-bold text-zinc-100 line-clamp-1 group-hover:text-red-500 transition-colors">{t}</p>
+                <p className="text-[11px] font-medium text-zinc-500 mt-0.5 flex items-center gap-1.5">
+                  {item.type === "tv" && item.season && item.episode ? <span className="text-zinc-400">S{item.season} E{item.episode}</span> : null}
+                  <span className="w-1 h-1 rounded-full bg-zinc-700" />
+                  {fmt(item.time)} left
+                </p>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+const fmt = (s: number) => {
+  if (!isFinite(s) || s < 0) return "0:00";
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+};
+
 // ─── Main ─────────────────────────────────────────────────────────────────
 interface RowData { rowTitle: string; items: Media[]; type: "movie" | "tv"; icon: React.ElementType; }
 
@@ -356,6 +480,8 @@ export default function Home() {
         <Hero items={hero} />
       )}
       <div className="relative z-10 -mt-8 pb-16">
+        {/* Continue Watching — always first */}
+        <ContinueWatching />
         {loading
           ? Array.from({ length: 3 }).map((_, i) => (
               <section key={i} className="mb-10 px-4 sm:px-8">
