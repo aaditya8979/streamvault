@@ -49,11 +49,17 @@ export async function GET(req: NextRequest) {
     // ── M3U8 Manifest: buffer small text and rewrite segment URLs ─────
     if (isManifest) {
       const text = await resp.text();
-      const p2pBase = `http://${P2P_HOST}:${P2P_PORT}/`;
+
+      // Rewrite segment URLs so they also go through our proxy
+      // Handles both relative paths (from P2P) and absolute URLs (from CDN)
+      const baseDir = fetchUrl.substring(0, fetchUrl.lastIndexOf("/") + 1);
 
       const manifest = text.replace(
-        /^(\d+\.ts\?.+)$/gm,
-        (match) => `/api/filmin/hls?url=${encodeURIComponent(p2pBase + match)}`
+        /^(?!#)(.+\.ts.*)$/gm,
+        (match) => {
+          const segUrl = match.startsWith("http") ? match : baseDir + match;
+          return `/api/filmin/hls?url=${encodeURIComponent(segUrl)}`;
+        }
       );
 
       return new NextResponse(manifest, {
