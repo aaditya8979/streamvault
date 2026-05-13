@@ -185,7 +185,7 @@ function SearchModal({ onClose }: { onClose: () => void }) {
       setLoading(true);
       try {
         const data = await tmdb.search(q.trim());
-        setResults(((data.results ?? []) as any[]).filter((r: any) => r.media_type !== "person" && r.poster_path).slice(0, 12));
+        setResults((data.results || []).filter((r: Media) => r.media_type !== "person" && r.poster_path).slice(0, 12));
       } catch { setResults([]); } finally { setLoading(false); }
     }, 350);
     return () => clearTimeout(t);
@@ -325,9 +325,9 @@ function ContinueWatching() {
           setDetails(prev => ({
             ...prev,
             [item.mediaId]: {
-              title: (data as any).title || (data as any).name || "Unknown",
+              title: (data as Media).title || (data as Media).name || "Unknown",
               poster: data.poster_path || "",
-              duration: (data as any).runtime ? (data as any).runtime * 60 : undefined,
+              duration: item.type === "movie" ? ((data as MovieDetail).runtime ? (data as MovieDetail).runtime! * 60 : undefined) : undefined,
             }
           }));
         }

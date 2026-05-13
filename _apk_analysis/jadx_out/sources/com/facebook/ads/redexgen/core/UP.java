@@ -1,0 +1,106 @@
+package com.facebook.ads.redexgen.core;
+
+import android.text.TextUtils;
+import androidx.exifinterface.media.ExifInterface;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+
+/* JADX INFO: loaded from: assets/audience_network.dex */
+public final class UP {
+    public static byte[] A07;
+    public final double A00;
+    public final double A01 = System.currentTimeMillis() / 1000.0d;
+    public final UU A02;
+    public final UV A03;
+    public final String A04;
+    public final String A05;
+    public final Map<String, String> A06;
+
+    static {
+        A02();
+    }
+
+    public UP(SQ sq2, String str, double d10, String str2, Map<String, String> map, UU uu, UV uv, boolean z10) {
+        this.A05 = str;
+        this.A00 = d10;
+        this.A04 = str2;
+        this.A02 = uu;
+        this.A03 = uv;
+        HashMap map2 = new HashMap();
+        if (map != null && !map.isEmpty()) {
+            map2.putAll(map);
+        }
+        if (z10) {
+            map2.put(A00(27, 24, 18), String.valueOf(z10));
+        }
+        String strA01 = AbstractC2174Uc.A01(str);
+        if (!TextUtils.isEmpty(strA01) && (z10 || uv == UV.A0C)) {
+            map2.put(A00(6, 21, 46), strA01);
+        }
+        if (A0B()) {
+            map2.put(A00(0, 6, 111), AbstractC2238Wr.A01(sq2.A04().A6o()));
+        }
+        this.A06 = A01(map2);
+    }
+
+    public static String A00(int i10, int i11, int i12) {
+        byte[] bArrCopyOfRange = Arrays.copyOfRange(A07, i10, i10 + i11);
+        for (int i13 = 0; i13 < bArrCopyOfRange.length; i13++) {
+            bArrCopyOfRange[i13] = (byte) ((bArrCopyOfRange[i13] ^ i12) ^ 42);
+        }
+        return new String(bArrCopyOfRange);
+    }
+
+    public static Map<String, String> A01(Map<String, String> map) {
+        HashMap map2 = new HashMap();
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+            if (value != null) {
+                map2.put(key, value);
+            }
+        }
+        return map2;
+    }
+
+    public static void A02() {
+        A07 = new byte[]{36, 43, 36, 41, ExifInterface.START_CODE, 34, 107, 118, 109, 99, 109, 106, 101, 104, 91, 103, 104, 109, 97, 106, 112, 91, 112, 107, 111, 97, 106, 75, 80, 87, 77, 84, 92, 103, 81, 86, 91, 84, 77, 92, 93, 103, 81, 86, 103, 94, 77, 86, 86, 93, 84};
+    }
+
+    public final double A03() {
+        return this.A00;
+    }
+
+    public final double A04() {
+        return this.A01;
+    }
+
+    public final UU A05() {
+        return this.A02;
+    }
+
+    public final UV A06() {
+        return this.A03;
+    }
+
+    public final String A07() {
+        return this.A04;
+    }
+
+    public final String A08() {
+        return this.A05;
+    }
+
+    public final Map<String, String> A09() {
+        return this.A06;
+    }
+
+    public final boolean A0A() {
+        return !TextUtils.isEmpty(this.A05);
+    }
+
+    public final boolean A0B() {
+        return this.A02 == UU.A05;
+    }
+}

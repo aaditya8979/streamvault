@@ -60,9 +60,9 @@ export default function FilminPlayer({ streamUrl, title, mediaId, audioOptions, 
   const [probing, setProbing] = useState(false);
   const [brightness, setBrightness] = useState(100);
   const [gesture, setGesture] = useState<{ type: "v" | "b", val: number } | null>(null);
-  const gestTimer = useRef<any>(null);
+  const gestTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchStart = useRef<{ x: number, y: number, v: number, b: number } | null>(null);
-  const saveTimer = useRef<any>(null);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resumeKey = mediaId ? `sv_resume_${mediaId}` : null;
   
   const LANGS: Record<string,string> = {hin:"Hindi",eng:"English",en:"English",kor:"Korean",ko:"Korean",spa:"Spanish",es:"Spanish",fra:"French",fr:"French",jpn:"Japanese",ja:"Japanese",zho:"Chinese",zh:"Chinese",ara:"Arabic",por:"Portuguese",deu:"German",de:"German",ita:"Italian",it:"Italian",rus:"Russian",ru:"Russian",tam:"Tamil",tel:"Telugu",mal:"Malayalam",ben:"Bengali",kan:"Kannada",mar:"Marathi",und:"Unknown"};

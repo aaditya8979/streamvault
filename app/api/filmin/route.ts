@@ -14,7 +14,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getFilminClient, FilminClient } from "../../../lib/filmin";
 
-function vodToJson(v: any) {
+function vodToJson(v: { id: number; vod_name: string; vod_pic: string; vod_year: string; vod_area: string; vod_remarks: string; type_id: number; type_name: string }) {
   const mediaType = FilminClient.getMediaType(v);
   const tmdbQuery = FilminClient.getTmdbSearchQuery(v);
   return {
@@ -124,7 +124,7 @@ export async function GET(req: NextRequest) {
       case "play": {
         // Get a single episode's playback URL (redirect or JSON)
         // This endpoint now supports BOTH Filmin IDs and TMDB IDs
-        let id = req.nextUrl.searchParams.get("id");
+        const id = req.nextUrl.searchParams.get("id");
         const type = req.nextUrl.searchParams.get("type") || "movie";
         const epNum = parseInt(req.nextUrl.searchParams.get("ep") || "1", 10);
         const audioType = parseInt(req.nextUrl.searchParams.get("audio") || "0", 10);
@@ -185,16 +185,17 @@ export async function GET(req: NextRequest) {
         const isHLS = episode.vod_url.includes(".m3u8");
 
         // Probe embedded tracks from the MP4 container — NON-BLOCKING for fast startup
-        let embeddedTracks = { audio: [] as any[], subtitles: [] as any[] };
+        let embeddedTracks: { audio: { index: number; lang: string; label: string; codec: string }[]; subtitles: { index: number; lang: string; label: string }[] } = { audio: [], subtitles: [] };
         const probeKey = `probe_${episode.vod_url}`;
-        const cached = (globalThis as any).__trackCache?.[probeKey];
+        const g = globalThis as unknown as { __trackCache?: Record<string, { audio: { index: number; lang: string; label: string; codec: string }[]; subtitles: { index: number; lang: string; label: string }[] }> };
+        const cached = g.__trackCache?.[probeKey];
         if (cached) {
           embeddedTracks = cached;
         } else if (!isHLS && streamUrl) {
           // Fire probe in background — don't block the response
           FilminClient.probeMP4Tracks(streamUrl).then(tracks => {
-            if (!( globalThis as any).__trackCache) (globalThis as any).__trackCache = {};
-            (globalThis as any).__trackCache[probeKey] = tracks;
+            if (!g.__trackCache) g.__trackCache = {};
+            g.__trackCache[probeKey] = tracks;
             console.log(`[filmin/play] Background probe found ${tracks.audio.length} audio, ${tracks.subtitles.length} subs`);
           }).catch(e => {
             console.error("[filmin/play] Background probe failed:", (e as Error).message);

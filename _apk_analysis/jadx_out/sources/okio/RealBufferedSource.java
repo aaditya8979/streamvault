@@ -1,0 +1,605 @@
+package okio;
+
+import android.support.v4.media.session.PlaybackStateCompat;
+import bo.a;
+import com.ironsource.G5;
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import tn.p;
+
+/* JADX INFO: compiled from: RealBufferedSource.kt */
+/* JADX INFO: loaded from: classes10.dex */
+public final class RealBufferedSource implements BufferedSource {
+
+    @NotNull
+    public final Buffer bufferField;
+    public boolean closed;
+
+    @NotNull
+    public final Source source;
+
+    public RealBufferedSource(@NotNull Source source) {
+        p.k(source, "source");
+        this.source = source;
+        this.bufferField = new Buffer();
+    }
+
+    public static /* synthetic */ void getBuffer$annotations() {
+    }
+
+    @Override // okio.BufferedSource, okio.BufferedSink
+    @NotNull
+    public Buffer buffer() {
+        return this.bufferField;
+    }
+
+    @Override // okio.Source, java.io.Closeable, java.lang.AutoCloseable
+    public void close() throws IOException {
+        if (this.closed) {
+            return;
+        }
+        this.closed = true;
+        this.source.close();
+        this.bufferField.clear();
+    }
+
+    @Override // okio.BufferedSource
+    public boolean exhausted() {
+        if (!this.closed) {
+            return this.bufferField.exhausted() && this.source.read(this.bufferField, PlaybackStateCompat.ACTION_PLAY_FROM_URI) == -1;
+        }
+        throw new IllegalStateException("closed".toString());
+    }
+
+    @Override // okio.BufferedSource, okio.BufferedSink
+    @NotNull
+    public Buffer getBuffer() {
+        return this.bufferField;
+    }
+
+    @Override // okio.BufferedSource
+    public long indexOf(byte b10) {
+        return indexOf(b10, 0L, Long.MAX_VALUE);
+    }
+
+    @Override // okio.BufferedSource
+    public long indexOf(byte b10, long j10) {
+        return indexOf(b10, j10, Long.MAX_VALUE);
+    }
+
+    @Override // okio.BufferedSource
+    public long indexOf(byte b10, long j10, long j11) {
+        if (!(!this.closed)) {
+            throw new IllegalStateException("closed".toString());
+        }
+        if (!(0 <= j10 && j10 <= j11)) {
+            throw new IllegalArgumentException(("fromIndex=" + j10 + " toIndex=" + j11).toString());
+        }
+        while (j10 < j11) {
+            long jIndexOf = this.bufferField.indexOf(b10, j10, j11);
+            if (jIndexOf != -1) {
+                return jIndexOf;
+            }
+            long size = this.bufferField.size();
+            if (size >= j11 || this.source.read(this.bufferField, PlaybackStateCompat.ACTION_PLAY_FROM_URI) == -1) {
+                return -1L;
+            }
+            j10 = Math.max(j10, size);
+        }
+        return -1L;
+    }
+
+    @Override // okio.BufferedSource
+    public long indexOf(@NotNull ByteString byteString) {
+        p.k(byteString, "bytes");
+        return indexOf(byteString, 0L);
+    }
+
+    @Override // okio.BufferedSource
+    public long indexOf(@NotNull ByteString byteString, long j10) throws IOException {
+        p.k(byteString, "bytes");
+        if (!(!this.closed)) {
+            throw new IllegalStateException("closed".toString());
+        }
+        while (true) {
+            long jIndexOf = this.bufferField.indexOf(byteString, j10);
+            if (jIndexOf != -1) {
+                return jIndexOf;
+            }
+            long size = this.bufferField.size();
+            if (this.source.read(this.bufferField, PlaybackStateCompat.ACTION_PLAY_FROM_URI) == -1) {
+                return -1L;
+            }
+            j10 = Math.max(j10, (size - ((long) byteString.size())) + 1);
+        }
+    }
+
+    @Override // okio.BufferedSource
+    public long indexOfElement(@NotNull ByteString byteString) {
+        p.k(byteString, "targetBytes");
+        return indexOfElement(byteString, 0L);
+    }
+
+    @Override // okio.BufferedSource
+    public long indexOfElement(@NotNull ByteString byteString, long j10) {
+        p.k(byteString, "targetBytes");
+        if (!(!this.closed)) {
+            throw new IllegalStateException("closed".toString());
+        }
+        while (true) {
+            long jIndexOfElement = this.bufferField.indexOfElement(byteString, j10);
+            if (jIndexOfElement != -1) {
+                return jIndexOfElement;
+            }
+            long size = this.bufferField.size();
+            if (this.source.read(this.bufferField, PlaybackStateCompat.ACTION_PLAY_FROM_URI) == -1) {
+                return -1L;
+            }
+            j10 = Math.max(j10, size);
+        }
+    }
+
+    @Override // okio.BufferedSource
+    @NotNull
+    public InputStream inputStream() {
+        return new InputStream() { // from class: okio.RealBufferedSource.inputStream.1
+            @Override // java.io.InputStream
+            public int available() throws IOException {
+                RealBufferedSource realBufferedSource = RealBufferedSource.this;
+                if (realBufferedSource.closed) {
+                    throw new IOException("closed");
+                }
+                return (int) Math.min(realBufferedSource.bufferField.size(), Integer.MAX_VALUE);
+            }
+
+            @Override // java.io.InputStream, java.io.Closeable, java.lang.AutoCloseable
+            public void close() throws IOException {
+                RealBufferedSource.this.close();
+            }
+
+            @Override // java.io.InputStream
+            public int read() throws IOException {
+                RealBufferedSource realBufferedSource = RealBufferedSource.this;
+                if (realBufferedSource.closed) {
+                    throw new IOException("closed");
+                }
+                if (realBufferedSource.bufferField.size() == 0) {
+                    RealBufferedSource realBufferedSource2 = RealBufferedSource.this;
+                    if (realBufferedSource2.source.read(realBufferedSource2.bufferField, PlaybackStateCompat.ACTION_PLAY_FROM_URI) == -1) {
+                        return -1;
+                    }
+                }
+                return RealBufferedSource.this.bufferField.readByte() & 255;
+            }
+
+            @Override // java.io.InputStream
+            public int read(@NotNull byte[] bArr, int i10, int i11) throws IOException {
+                p.k(bArr, "data");
+                if (RealBufferedSource.this.closed) {
+                    throw new IOException("closed");
+                }
+                SegmentedByteString.checkOffsetAndCount(bArr.length, i10, i11);
+                if (RealBufferedSource.this.bufferField.size() == 0) {
+                    RealBufferedSource realBufferedSource = RealBufferedSource.this;
+                    if (realBufferedSource.source.read(realBufferedSource.bufferField, PlaybackStateCompat.ACTION_PLAY_FROM_URI) == -1) {
+                        return -1;
+                    }
+                }
+                return RealBufferedSource.this.bufferField.read(bArr, i10, i11);
+            }
+
+            @NotNull
+            public String toString() {
+                return RealBufferedSource.this + ".inputStream()";
+            }
+        };
+    }
+
+    @Override // java.nio.channels.Channel
+    public boolean isOpen() {
+        return !this.closed;
+    }
+
+    @Override // okio.BufferedSource
+    @NotNull
+    public BufferedSource peek() {
+        return Okio.buffer(new PeekSource(this));
+    }
+
+    @Override // okio.BufferedSource
+    public boolean rangeEquals(long j10, @NotNull ByteString byteString) {
+        p.k(byteString, "bytes");
+        return rangeEquals(j10, byteString, 0, byteString.size());
+    }
+
+    @Override // okio.BufferedSource
+    public boolean rangeEquals(long j10, @NotNull ByteString byteString, int i10, int i11) {
+        p.k(byteString, "bytes");
+        if (!(!this.closed)) {
+            throw new IllegalStateException("closed".toString());
+        }
+        if (j10 >= 0 && i10 >= 0 && i11 >= 0 && byteString.size() - i10 >= i11) {
+            for (int i12 = 0; i12 < i11; i12++) {
+                long j11 = ((long) i12) + j10;
+                if (request(1 + j11) && this.bufferField.getByte(j11) == byteString.getByte(i10 + i12)) {
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    @Override // java.nio.channels.ReadableByteChannel
+    public int read(@NotNull ByteBuffer byteBuffer) {
+        p.k(byteBuffer, "sink");
+        if (this.bufferField.size() == 0 && this.source.read(this.bufferField, PlaybackStateCompat.ACTION_PLAY_FROM_URI) == -1) {
+            return -1;
+        }
+        return this.bufferField.read(byteBuffer);
+    }
+
+    @Override // okio.BufferedSource
+    public int read(@NotNull byte[] bArr) {
+        p.k(bArr, "sink");
+        return read(bArr, 0, bArr.length);
+    }
+
+    @Override // okio.BufferedSource
+    public int read(@NotNull byte[] bArr, int i10, int i11) {
+        p.k(bArr, "sink");
+        long j10 = i11;
+        SegmentedByteString.checkOffsetAndCount(bArr.length, i10, j10);
+        if (this.bufferField.size() == 0 && this.source.read(this.bufferField, PlaybackStateCompat.ACTION_PLAY_FROM_URI) == -1) {
+            return -1;
+        }
+        return this.bufferField.read(bArr, i10, (int) Math.min(j10, this.bufferField.size()));
+    }
+
+    @Override // okio.Source
+    public long read(@NotNull Buffer buffer, long j10) {
+        p.k(buffer, "sink");
+        if (!(j10 >= 0)) {
+            throw new IllegalArgumentException(("byteCount < 0: " + j10).toString());
+        }
+        if (!(!this.closed)) {
+            throw new IllegalStateException("closed".toString());
+        }
+        if (this.bufferField.size() == 0 && this.source.read(this.bufferField, PlaybackStateCompat.ACTION_PLAY_FROM_URI) == -1) {
+            return -1L;
+        }
+        return this.bufferField.read(buffer, Math.min(j10, this.bufferField.size()));
+    }
+
+    @Override // okio.BufferedSource
+    public long readAll(@NotNull Sink sink) throws IOException {
+        p.k(sink, "sink");
+        long j10 = 0;
+        while (this.source.read(this.bufferField, PlaybackStateCompat.ACTION_PLAY_FROM_URI) != -1) {
+            long jCompleteSegmentByteCount = this.bufferField.completeSegmentByteCount();
+            if (jCompleteSegmentByteCount > 0) {
+                j10 += jCompleteSegmentByteCount;
+                sink.write(this.bufferField, jCompleteSegmentByteCount);
+            }
+        }
+        if (this.bufferField.size() <= 0) {
+            return j10;
+        }
+        long size = j10 + this.bufferField.size();
+        Buffer buffer = this.bufferField;
+        sink.write(buffer, buffer.size());
+        return size;
+    }
+
+    @Override // okio.BufferedSource
+    public byte readByte() throws EOFException {
+        require(1L);
+        return this.bufferField.readByte();
+    }
+
+    @Override // okio.BufferedSource
+    @NotNull
+    public byte[] readByteArray() throws IOException {
+        this.bufferField.writeAll(this.source);
+        return this.bufferField.readByteArray();
+    }
+
+    @Override // okio.BufferedSource
+    @NotNull
+    public byte[] readByteArray(long j10) throws EOFException {
+        require(j10);
+        return this.bufferField.readByteArray(j10);
+    }
+
+    @Override // okio.BufferedSource
+    @NotNull
+    public ByteString readByteString() throws IOException {
+        this.bufferField.writeAll(this.source);
+        return this.bufferField.readByteString();
+    }
+
+    @Override // okio.BufferedSource
+    @NotNull
+    public ByteString readByteString(long j10) throws EOFException {
+        require(j10);
+        return this.bufferField.readByteString(j10);
+    }
+
+    @Override // okio.BufferedSource
+    public long readDecimalLong() throws EOFException {
+        byte b10;
+        require(1L);
+        long j10 = 0;
+        while (true) {
+            long j11 = j10 + 1;
+            if (!request(j11)) {
+                break;
+            }
+            b10 = this.bufferField.getByte(j10);
+            if ((b10 < 48 || b10 > 57) && !(j10 == 0 && b10 == 45)) {
+                break;
+            }
+            j10 = j11;
+        }
+        if (j10 == 0) {
+            StringBuilder sb2 = new StringBuilder();
+            sb2.append("Expected a digit or '-' but was 0x");
+            String string = Integer.toString(b10, a.a(16));
+            p.j(string, "toString(...)");
+            sb2.append(string);
+            throw new NumberFormatException(sb2.toString());
+        }
+        return this.bufferField.readDecimalLong();
+    }
+
+    @Override // okio.BufferedSource
+    public void readFully(@NotNull Buffer buffer, long j10) throws IOException {
+        p.k(buffer, "sink");
+        try {
+            require(j10);
+            this.bufferField.readFully(buffer, j10);
+        } catch (EOFException e10) {
+            buffer.writeAll(this.bufferField);
+            throw e10;
+        }
+    }
+
+    @Override // okio.BufferedSource
+    public void readFully(@NotNull byte[] bArr) throws EOFException {
+        p.k(bArr, "sink");
+        try {
+            require(bArr.length);
+            this.bufferField.readFully(bArr);
+        } catch (EOFException e10) {
+            int i10 = 0;
+            while (this.bufferField.size() > 0) {
+                Buffer buffer = this.bufferField;
+                int i11 = buffer.read(bArr, i10, (int) buffer.size());
+                if (i11 == -1) {
+                    throw new AssertionError();
+                }
+                i10 += i11;
+            }
+            throw e10;
+        }
+    }
+
+    @Override // okio.BufferedSource
+    public long readHexadecimalUnsignedLong() throws EOFException {
+        byte b10;
+        require(1L);
+        int i10 = 0;
+        while (true) {
+            int i11 = i10 + 1;
+            if (!request(i11)) {
+                break;
+            }
+            b10 = this.bufferField.getByte(i10);
+            if ((b10 < 48 || b10 > 57) && ((b10 < 97 || b10 > 102) && (b10 < 65 || b10 > 70))) {
+                break;
+            }
+            i10 = i11;
+        }
+        if (i10 == 0) {
+            StringBuilder sb2 = new StringBuilder();
+            sb2.append("Expected leading [0-9a-fA-F] character but was 0x");
+            String string = Integer.toString(b10, a.a(16));
+            p.j(string, "toString(...)");
+            sb2.append(string);
+            throw new NumberFormatException(sb2.toString());
+        }
+        return this.bufferField.readHexadecimalUnsignedLong();
+    }
+
+    @Override // okio.BufferedSource
+    public int readInt() throws EOFException {
+        require(4L);
+        return this.bufferField.readInt();
+    }
+
+    @Override // okio.BufferedSource
+    public int readIntLe() throws EOFException {
+        require(4L);
+        return this.bufferField.readIntLe();
+    }
+
+    @Override // okio.BufferedSource
+    public long readLong() throws EOFException {
+        require(8L);
+        return this.bufferField.readLong();
+    }
+
+    @Override // okio.BufferedSource
+    public long readLongLe() throws EOFException {
+        require(8L);
+        return this.bufferField.readLongLe();
+    }
+
+    @Override // okio.BufferedSource
+    public short readShort() throws EOFException {
+        require(2L);
+        return this.bufferField.readShort();
+    }
+
+    @Override // okio.BufferedSource
+    public short readShortLe() throws EOFException {
+        require(2L);
+        return this.bufferField.readShortLe();
+    }
+
+    @Override // okio.BufferedSource
+    @NotNull
+    public String readString(long j10, @NotNull Charset charset) throws EOFException {
+        p.k(charset, G5.M);
+        require(j10);
+        return this.bufferField.readString(j10, charset);
+    }
+
+    @Override // okio.BufferedSource
+    @NotNull
+    public String readString(@NotNull Charset charset) throws IOException {
+        p.k(charset, G5.M);
+        this.bufferField.writeAll(this.source);
+        return this.bufferField.readString(charset);
+    }
+
+    @Override // okio.BufferedSource
+    @NotNull
+    public String readUtf8() throws IOException {
+        this.bufferField.writeAll(this.source);
+        return this.bufferField.readUtf8();
+    }
+
+    @Override // okio.BufferedSource
+    @NotNull
+    public String readUtf8(long j10) throws EOFException {
+        require(j10);
+        return this.bufferField.readUtf8(j10);
+    }
+
+    @Override // okio.BufferedSource
+    public int readUtf8CodePoint() throws EOFException {
+        require(1L);
+        byte b10 = this.bufferField.getByte(0L);
+        if ((b10 & 224) == 192) {
+            require(2L);
+        } else if ((b10 & 240) == 224) {
+            require(3L);
+        } else if ((b10 & 248) == 240) {
+            require(4L);
+        }
+        return this.bufferField.readUtf8CodePoint();
+    }
+
+    @Override // okio.BufferedSource
+    @Nullable
+    public String readUtf8Line() {
+        long jIndexOf = indexOf((byte) 10);
+        if (jIndexOf != -1) {
+            return okio.internal.Buffer.readUtf8Line(this.bufferField, jIndexOf);
+        }
+        if (this.bufferField.size() != 0) {
+            return readUtf8(this.bufferField.size());
+        }
+        return null;
+    }
+
+    @Override // okio.BufferedSource
+    @NotNull
+    public String readUtf8LineStrict() {
+        return readUtf8LineStrict(Long.MAX_VALUE);
+    }
+
+    @Override // okio.BufferedSource
+    @NotNull
+    public String readUtf8LineStrict(long j10) throws EOFException {
+        if (!(j10 >= 0)) {
+            throw new IllegalArgumentException(("limit < 0: " + j10).toString());
+        }
+        long j11 = j10 == Long.MAX_VALUE ? Long.MAX_VALUE : j10 + 1;
+        long jIndexOf = indexOf((byte) 10, 0L, j11);
+        if (jIndexOf != -1) {
+            return okio.internal.Buffer.readUtf8Line(this.bufferField, jIndexOf);
+        }
+        if (j11 < Long.MAX_VALUE && request(j11) && this.bufferField.getByte(j11 - 1) == 13 && request(1 + j11) && this.bufferField.getByte(j11) == 10) {
+            return okio.internal.Buffer.readUtf8Line(this.bufferField, j11);
+        }
+        Buffer buffer = new Buffer();
+        Buffer buffer2 = this.bufferField;
+        buffer2.copyTo(buffer, 0L, Math.min(32, buffer2.size()));
+        throw new EOFException("\\n not found: limit=" + Math.min(this.bufferField.size(), j10) + " content=" + buffer.readByteString().hex() + (char) 8230);
+    }
+
+    @Override // okio.BufferedSource
+    public boolean request(long j10) {
+        if (!(j10 >= 0)) {
+            throw new IllegalArgumentException(("byteCount < 0: " + j10).toString());
+        }
+        if (!(!this.closed)) {
+            throw new IllegalStateException("closed".toString());
+        }
+        while (this.bufferField.size() < j10) {
+            if (this.source.read(this.bufferField, PlaybackStateCompat.ACTION_PLAY_FROM_URI) == -1) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override // okio.BufferedSource
+    public void require(long j10) throws EOFException {
+        if (!request(j10)) {
+            throw new EOFException();
+        }
+    }
+
+    @Override // okio.BufferedSource
+    public int select(@NotNull Options options) throws EOFException {
+        p.k(options, "options");
+        if (!(!this.closed)) {
+            throw new IllegalStateException("closed".toString());
+        }
+        while (true) {
+            int iSelectPrefix = okio.internal.Buffer.selectPrefix(this.bufferField, options, true);
+            if (iSelectPrefix != -2) {
+                if (iSelectPrefix != -1) {
+                    this.bufferField.skip(options.getByteStrings$okio()[iSelectPrefix].size());
+                    return iSelectPrefix;
+                }
+            } else if (this.source.read(this.bufferField, PlaybackStateCompat.ACTION_PLAY_FROM_URI) == -1) {
+                break;
+            }
+        }
+        return -1;
+    }
+
+    @Override // okio.BufferedSource
+    public void skip(long j10) throws EOFException {
+        if (!(!this.closed)) {
+            throw new IllegalStateException("closed".toString());
+        }
+        while (j10 > 0) {
+            if (this.bufferField.size() == 0 && this.source.read(this.bufferField, PlaybackStateCompat.ACTION_PLAY_FROM_URI) == -1) {
+                throw new EOFException();
+            }
+            long jMin = Math.min(j10, this.bufferField.size());
+            this.bufferField.skip(jMin);
+            j10 -= jMin;
+        }
+    }
+
+    @Override // okio.Source
+    @NotNull
+    public Timeout timeout() {
+        return this.source.timeout();
+    }
+
+    @NotNull
+    public String toString() {
+        return "buffer(" + this.source + ')';
+    }
+}

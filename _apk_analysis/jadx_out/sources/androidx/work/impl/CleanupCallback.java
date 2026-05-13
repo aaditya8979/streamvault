@@ -1,0 +1,40 @@
+package androidx.work.impl;
+
+import androidx.room.RoomDatabase;
+import androidx.sqlite.db.SupportSQLiteDatabase;
+import kotlin.Metadata;
+import org.jetbrains.annotations.NotNull;
+import tn.p;
+
+/* JADX INFO: compiled from: WorkDatabase.kt */
+/* JADX INFO: loaded from: classes3.dex */
+@Metadata(bv = {}, d1 = {"\u0000$\n\u0002\u0018\u0002\n\u0002\u0018\u0002\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0000\n\u0002\u0010\u000e\n\u0002\b\u0003\n\u0002\u0010\t\n\u0002\b\u0006\bÀ\u0002\u0018\u00002\u00020\u0001B\t\b\u0002¢\u0006\u0004\b\u000e\u0010\u000fJ\u0010\u0010\u0005\u001a\u00020\u00042\u0006\u0010\u0003\u001a\u00020\u0002H\u0016R\u0014\u0010\t\u001a\u00020\u00068BX\u0082\u0004¢\u0006\u0006\u001a\u0004\b\u0007\u0010\bR\u0011\u0010\r\u001a\u00020\n8F¢\u0006\u0006\u001a\u0004\b\u000b\u0010\f¨\u0006\u0010"}, d2 = {"Landroidx/work/impl/CleanupCallback;", "Landroidx/room/RoomDatabase$Callback;", "Landroidx/sqlite/db/SupportSQLiteDatabase;", "db", "Lbn/r;", "onOpen", "", "getPruneSQL", "()Ljava/lang/String;", "pruneSQL", "", "getPruneDate", "()J", "pruneDate", "<init>", "()V", "work-runtime_release"}, k = 1, mv = {1, 7, 1})
+public final class CleanupCallback extends RoomDatabase.Callback {
+
+    @NotNull
+    public static final CleanupCallback INSTANCE = new CleanupCallback();
+
+    private CleanupCallback() {
+    }
+
+    private final String getPruneSQL() {
+        return "DELETE FROM workspec WHERE state IN (2, 3, 5) AND (last_enqueue_time + minimum_retention_duration) < " + getPruneDate() + " AND (SELECT COUNT(*)=0 FROM dependency WHERE     prerequisite_id=id AND     work_spec_id NOT IN         (SELECT id FROM workspec WHERE state IN (2, 3, 5)))";
+    }
+
+    public final long getPruneDate() {
+        return System.currentTimeMillis() - WorkDatabaseKt.PRUNE_THRESHOLD_MILLIS;
+    }
+
+    @Override // androidx.room.RoomDatabase.Callback
+    public void onOpen(@NotNull SupportSQLiteDatabase supportSQLiteDatabase) {
+        p.k(supportSQLiteDatabase, "db");
+        super.onOpen(supportSQLiteDatabase);
+        supportSQLiteDatabase.beginTransaction();
+        try {
+            supportSQLiteDatabase.execSQL(getPruneSQL());
+            supportSQLiteDatabase.setTransactionSuccessful();
+        } finally {
+            supportSQLiteDatabase.endTransaction();
+        }
+    }
+}
