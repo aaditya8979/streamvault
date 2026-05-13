@@ -65,7 +65,7 @@ function md5(str: string): string {
   return crypto.createHash("md5").update(str).digest("hex");
 }
 
-function generateDeviceId(): string {
+function _generateDeviceId(): string {
   const chars: string[] = [];
   for (let i = 0; i < 22; i++) {
     if (Math.random() < 0.5) {
@@ -579,7 +579,7 @@ export class FilminClient {
     audio: { index: number; lang: string; label: string; codec: string }[];
     subtitles: { index: number; lang: string; label: string }[];
   }> {
-    const result = { audio: [] as any[], subtitles: [] as any[] };
+    const result: { audio: { index: number; lang: string; label: string; codec: string }[]; subtitles: { index: number; lang: string; label: string }[] } = { audio: [], subtitles: [] };
 
     try {
       // Phase 1: Small fetch to find moov position and size

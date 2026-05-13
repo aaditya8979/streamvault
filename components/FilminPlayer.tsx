@@ -46,7 +46,7 @@ export default function FilminPlayer({ streamUrl, title, mediaId, audioOptions, 
   const [buf, setBuf] = useState(0);
   const [vol, setVol] = useState(1);
   const [muted, setMuted] = useState(false);
-  const [full, setFull] = useState(false);
+  const [full] = useState(false);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [ui, setUi] = useState(true);
@@ -134,7 +134,7 @@ export default function FilminPlayer({ streamUrl, title, mediaId, audioOptions, 
           return d.audioTracks.map((t, i) => ({
             i, 
             lang: t.lang || "und", 
-            label: t.name || (t.lang ? (LANGS as any)[t.lang] : null) || `Track ${i+1}`
+            label: t.name || (t.lang ? LANGS[t.lang as keyof typeof LANGS] : null) || `Track ${i+1}`
           }));
         });
       });
@@ -147,6 +147,7 @@ export default function FilminPlayer({ streamUrl, title, mediaId, audioOptions, 
       return () => { v.src = ""; };
     }
     setErr("HLS not supported"); setLoading(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [streamUrl]);
 
   /* ── Video events ──────────────────────────────────────────── */
@@ -184,6 +185,7 @@ export default function FilminPlayer({ streamUrl, title, mediaId, audioOptions, 
         if (hlsRef.current) hlsRef.current.audioTrack = hindiIdx;
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [embeddedTracks]);
 
   /* ── Handle touch gestures ── */
@@ -221,23 +223,25 @@ export default function FilminPlayer({ streamUrl, title, mediaId, audioOptions, 
   useEffect(() => {
     const v = vRef.current;
     if (!v || mp4Audio.length < 2) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const vAny = v as any;
     const syncTracks = () => {
-      const at = (v as any).audioTracks;
+      const at = vAny.audioTracks;
       if (at && at.length > 1) { for (let j = 0; j < at.length; j++) at[j].enabled = (j === mp4AudioIdx); }
       if (hlsRef.current && hlsRef.current.audioTracks.length > 1) { if (hlsRef.current.audioTrack !== mp4AudioIdx) hlsRef.current.audioTrack = mp4AudioIdx; }
     };
     syncTracks();
     const handler = () => syncTracks();
-    if ((v as any).audioTracks) {
-      (v as any).audioTracks.addEventListener?.('addtrack', handler);
-      (v as any).audioTracks.addEventListener?.('change', handler);
+    if (vAny.audioTracks) {
+      vAny.audioTracks.addEventListener?.('addtrack', handler);
+      vAny.audioTracks.addEventListener?.('change', handler);
     }
     v.addEventListener('loadedmetadata', syncTracks);
     v.addEventListener('canplay', syncTracks);
     return () => {
-      if ((v as any).audioTracks) {
-        (v as any).audioTracks.removeEventListener?.('addtrack', handler);
-        (v as any).audioTracks.removeEventListener?.('change', handler);
+      if (vAny.audioTracks) {
+        vAny.audioTracks.removeEventListener?.('addtrack', handler);
+        vAny.audioTracks.removeEventListener?.('change', handler);
       }
       v.removeEventListener('loadedmetadata', syncTracks);
       v.removeEventListener('canplay', syncTracks);
@@ -267,7 +271,7 @@ export default function FilminPlayer({ streamUrl, title, mediaId, audioOptions, 
       if (["INPUT", "TEXTAREA"].includes((e.target as HTMLElement).tagName)) return;
       const v = vRef.current; if (!v) return;
       switch (e.key) {
-        case " ": case "k": e.preventDefault(); v.paused ? safePlay(v) : v.pause(); flash(); break;
+        case " ": case "k": e.preventDefault(); if (v.paused) { safePlay(v); } else { v.pause(); } flash(); break;
         case "f": e.preventDefault(); toggleFs(); break;
         case "m": e.preventDefault(); v.muted = !v.muted; setMuted(v.muted); flash(); break;
         case "ArrowLeft": e.preventDefault(); v.currentTime = Math.max(0, v.currentTime - 10); flash(); break;
@@ -278,6 +282,7 @@ export default function FilminPlayer({ streamUrl, title, mediaId, audioOptions, 
     };
     document.addEventListener("keydown", fn);
     return () => document.removeEventListener("keydown", fn);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flash]);
 
   /* ── Fullscreen ────────────────────────────────────────────── */
@@ -297,7 +302,7 @@ export default function FilminPlayer({ streamUrl, title, mediaId, audioOptions, 
 
   return (
     <div ref={wRef} style={rootStyle} onMouseMove={flash} onTouchStart={handleTouch} onTouchMove={handleTouch} onTouchEnd={() => touchStart.current = null}
-      onClick={(e) => { if (!(e.target as HTMLElement).closest("[data-p]")) { const v = vRef.current; if (v) v.paused ? v.play() : v.pause(); flash(); } }}
+      onClick={(e) => { if (!(e.target as HTMLElement).closest("[data-p]")) { const v = vRef.current; if (v) { if (v.paused) { v.play(); } else { v.pause(); } } flash(); } }}
       onDoubleClick={(e) => { if (!(e.target as HTMLElement).closest("[data-p]")) toggleFs(); }}>
 
       <style>{`
@@ -412,7 +417,7 @@ export default function FilminPlayer({ streamUrl, title, mediaId, audioOptions, 
           {/* Controls row */}
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {/* Play */}
-            <button style={B} onClick={() => { const v = vRef.current; if (v) v.paused ? safePlay(v) : v.pause(); }}>
+            <button style={B} onClick={() => { const v = vRef.current; if (v) { if (v.paused) { safePlay(v); } else { v.pause(); } } }}>
               {playing
                 ? <svg width={18} height={18} viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
                 : <svg width={18} height={18} viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>}
@@ -490,6 +495,7 @@ export default function FilminPlayer({ streamUrl, title, mediaId, audioOptions, 
                             setMp4AudioIdx(t.i);
                             
                             // Native switch
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             const at = (v as any).audioTracks;
                             if (at) { for (let j = 0; j < at.length; j++) at[j].enabled = (j === t.i); }
                             
