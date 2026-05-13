@@ -1,10 +1,10 @@
 /**
- * vidsrc_cc  : vidsrc.cc — 4K, best library ✓
- * autoembed  : autoembed.co — 1080p, wide library ✓
- * embed_su   : embed.su — classic/old Bollywood ✓
+ * vidlink    : vidlink.pro — Current community favorite, fast, clean UI ✓
+ * embed_su   : embed.su — Fastest for brand new releases ✓
+ * vidsrc_pro : vidsrc.pro — Cleaner, stable version of VidSrc ✓
  */
 
-export type EmbedProvider = "vidsrc_cc" | "autoembed" | "embed_su";
+export type EmbedProvider = "filmin" | "vidsrc_cc";
 
 export interface Provider {
   id: EmbedProvider;
@@ -15,59 +15,43 @@ export interface Provider {
   hindiNote: string;
 }
 
-export function movieEmbed(tmdbId: number, provider: EmbedProvider = "vidsrc_cc", hindiMode = false): string {
+export function movieEmbed(tmdbId: number, provider: EmbedProvider = "filmin", hindiMode = false): string {
   switch (provider) {
+    case "filmin":
+      return `/api/filmin?action=play&id=${tmdbId}&type=movie&tmdb=1`;
     case "vidsrc_cc":
       return hindiMode
-        ? `https://vidsrc.cc/v2/embed/movie/${tmdbId}?lang=hi`
-        : `https://vidsrc.cc/v2/embed/movie/${tmdbId}`;
-    case "autoembed":
-      return hindiMode
-        ? `https://autoembed.co/movie/tmdb/${tmdbId}?lang=hi`
-        : `https://autoembed.co/movie/tmdb/${tmdbId}`;
-    case "embed_su":
-      return `https://embed.su/embed/movie/${tmdbId}`;
+        ? `https://vidsrc.pro/embed/movie/${tmdbId}?lang=hi`
+        : `https://vidsrc.pro/embed/movie/${tmdbId}`;
   }
 }
 
-export function tvEmbed(tmdbId: number, season: number, episode: number, provider: EmbedProvider = "vidsrc_cc", hindiMode = false): string {
+export function tvEmbed(tmdbId: number, season: number, episode: number, provider: EmbedProvider = "filmin", hindiMode = false): string {
   switch (provider) {
+    case "filmin":
+      return `/api/filmin?action=play&id=${tmdbId}&type=tv&s=${season}&e=${episode}&tmdb=1`;
     case "vidsrc_cc":
       return hindiMode
-        ? `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${season}/${episode}?lang=hi`
-        : `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${season}/${episode}`;
-    case "autoembed":
-      return hindiMode
-        ? `https://autoembed.co/tv/tmdb/${tmdbId}-${season}-${episode}?lang=hi`
-        : `https://autoembed.co/tv/tmdb/${tmdbId}-${season}-${episode}`;
-    case "embed_su":
-      return `https://embed.su/embed/tv/${tmdbId}/${season}/${episode}`;
+        ? `https://vidsrc.pro/embed/tv/${tmdbId}/${season}/${episode}?lang=hi`
+        : `https://vidsrc.pro/embed/tv/${tmdbId}/${season}/${episode}`;
   }
 }
 
 export const PROVIDERS: Provider[] = [
   {
+    id: "filmin",
+    label: "Filmin P2P",
+    badge: "PREMIUM",
+    badgeColor: "bg-red-600",
+    note: "High Quality · Multi-Audio ✓",
+    hindiNote: "Hindi/Tamil/Telugu available ✓",
+  },
+  {
     id: "vidsrc_cc",
     label: "VidSrc CC",
-    badge: "4K",
+    badge: "SPEED",
     badgeColor: "bg-purple-600",
-    note: "Best quality ✓",
-    hindiNote: "Hindi audio ✓",
-  },
-  {
-    id: "autoembed",
-    label: "AutoEmbed",
-    badge: "1080p",
-    badgeColor: "bg-blue-600",
-    note: "Wide library ✓",
-    hindiNote: "Hindi audio ✓",
-  },
-  {
-    id: "embed_su",
-    label: "EmbedSu",
-    badge: "HD",
-    badgeColor: "bg-green-600",
-    note: "Classic & old films ✓",
-    hindiNote: "Old Bollywood ✓",
+    note: "Fast Global CDN ✓",
+    hindiNote: "Hindi audio support ✓",
   },
 ];

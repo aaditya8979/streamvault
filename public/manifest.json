@@ -1,0 +1,14 @@
+{
+  "name": "StreamVault",
+  "short_name": "StreamVault",
+  "description": "Your premium personal streaming platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#e50914",
+  "orientation": "any",
+  "categories": ["entertainment", "video"],
+  "icons": [
+    { "src": "/logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

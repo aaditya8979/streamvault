@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { tmdb, IMG, rating, type TVDetail, type MovieDetail, type Episode, type SeasonDetail } from "@/lib/tmdb";
 import { PROVIDERS, movieEmbed, tvEmbed, type EmbedProvider } from "@/lib/embed";
+import FilminPlayer from "@/components/FilminPlayer";
 import clsx from "clsx";
 
 // ─── Hindi mode toggle ─────────────────────────────────────────────────────
@@ -312,7 +313,7 @@ export default function WatchClient({
   type, id, season: initSeason, episode: initEpisode,
 }: { type: "movie" | "tv"; id: number; season: number; episode: number }) {
 
-  const [provider, setProvider]   = useState<EmbedProvider>("vidsrc_cc");
+  const [provider, setProvider]   = useState<EmbedProvider>("filmin");
   const [hindiMode, setHindiMode] = useState(false);
   const [season, setSeason]       = useState(initSeason);
   const [episode, setEpisode]     = useState(initEpisode);
@@ -338,10 +339,36 @@ export default function WatchClient({
 
   useEffect(() => { if (type === "tv") loadSeason(season); }, [type, season, loadSeason]);
 
+  // Filmin P2P state
+  const [filminStreamUrl, setFilminStreamUrl] = useState<string | null>(null);
+  const [filminAudioOptions, setFilminAudioOptions] = useState<{type:number;type_name:string}[]>([]);
+  const [filminAudioType, setFilminAudioType] = useState(0);
+  const [filminLoading, setFilminLoading] = useState(false);
+  const [filminEmbeddedTracks, setFilminEmbeddedTracks] = useState<{
+    audio: { index: number; lang: string; label: string; codec: string }[];
+    subtitles: { index: number; lang: string; label: string }[];
+  }>({ audio: [], subtitles: [] });
+
+  // Fetch Filmin stream when provider=filmin
+  useEffect(() => {
+    if (provider !== "filmin") return;
+    setFilminLoading(true);
+    const ep = type === "tv" ? episode : 1;
+    fetch(`/api/filmin?action=play&id=${id}&type=${type}&ep=${ep}&audio=${filminAudioType}&tmdb=1&format=json`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.stream_url) setFilminStreamUrl(data.stream_url);
+        if (data.audio_options) setFilminAudioOptions(data.audio_options);
+        if (data.embedded_tracks) setFilminEmbeddedTracks(data.embedded_tracks);
+      })
+      .catch(() => setFilminStreamUrl(null))
+      .finally(() => setFilminLoading(false));
+  }, [provider, id, type, season, episode, filminAudioType]);
+
   const handleHindiChange = (v: boolean) => {
     setHindiMode(v);
-    if (v) setProvider("autoembed");
-    else    setProvider("vidsrc_cc");
+    // Stay on Filmin — it handles Hindi natively via audio track switching
+    if (provider !== "filmin") setProvider("filmin");
   };
 
   // Cycle to next provider — used when an episode shows error 233011
@@ -422,7 +449,33 @@ export default function WatchClient({
 
         {/* Left: Player + controls */}
         <div className="flex-1 flex flex-col min-w-0">
-          <Player src={embedUrl} title={watchTitle} />
+          {provider === "filmin" ? (
+            filminLoading ? (
+              <div className="aspect-video bg-zinc-950 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-zinc-500 animate-spin" />
+              </div>
+            ) : filminStreamUrl ? (
+              <FilminPlayer
+                streamUrl={filminStreamUrl}
+                title={watchTitle}
+                mediaId={`${type}_${id}${type === "tv" ? `_s${season}e${episode}` : ""}`}
+                audioOptions={filminAudioOptions}
+                currentAudioType={filminAudioType}
+                onAudioChange={(t) => setFilminAudioType(t)}
+                poster={posterPath ? IMG(posterPath, "w780") : undefined}
+                onNext={type === "tv" ? goNext : undefined}
+                embeddedTracks={filminEmbeddedTracks}
+              />
+            ) : (
+              <div className="aspect-video bg-zinc-950 flex flex-col items-center justify-center gap-3">
+                <AlertTriangle className="w-8 h-8 text-yellow-500" />
+                <p className="text-white text-sm">Filmin P2P not available</p>
+                <p className="text-zinc-500 text-xs">Start the Android emulator or try another server</p>
+              </div>
+            )
+          ) : (
+            <Player src={embedUrl} title={watchTitle} />
+          )}
 
           {/* ── "Not working?" quick-switch strip ──────────────────────
               Error 233011 = this episode has no source on current server.
