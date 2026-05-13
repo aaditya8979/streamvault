@@ -1,8 +1,0 @@
-package com.unity3d.services.ads.topics;
-
-/* JADX INFO: compiled from: TopicsEvents.kt */
-/* JADX INFO: loaded from: classes12.dex */
-public enum TopicsEvents {
-    NOT_AVAILABLE,
-    TOPICS_AVAILABLE
-}

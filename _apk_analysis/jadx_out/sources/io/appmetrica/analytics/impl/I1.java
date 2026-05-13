@@ -1,8 +1,0 @@
-package io.appmetrica.analytics.impl;
-
-import android.content.Intent;
-
-/* JADX INFO: loaded from: classes6.dex */
-public interface I1 {
-    boolean a(Intent intent);
-}

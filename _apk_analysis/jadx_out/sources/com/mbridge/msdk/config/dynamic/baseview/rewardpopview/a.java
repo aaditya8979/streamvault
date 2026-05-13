@@ -1,6 +1,0 @@
-package com.mbridge.msdk.config.dynamic.baseview.rewardpopview;
-
-/* JADX INFO: compiled from: AcquireRewardPopViewParameters.java */
-/* JADX INFO: loaded from: classes6.dex */
-public class a {
-}

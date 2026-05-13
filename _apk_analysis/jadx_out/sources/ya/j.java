@@ -1,9 +1,0 @@
-package ya;
-
-import android.view.View;
-
-/* JADX INFO: compiled from: OnViewTapListener.java */
-/* JADX INFO: loaded from: classes11.dex */
-public interface j {
-    void a(View view, float f10, float f11);
-}

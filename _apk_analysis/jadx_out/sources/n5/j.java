@@ -1,9 +1,0 @@
-package n5;
-
-import java.util.List;
-
-/* JADX INFO: compiled from: TextOutput.java */
-/* JADX INFO: loaded from: classes3.dex */
-public interface j {
-    void onCues(List<b> list);
-}

@@ -1,8 +1,0 @@
-package io.bidmachine;
-
-import androidx.annotation.NonNull;
-
-/* JADX INFO: loaded from: classes4.dex */
-public interface BidTokenCallback {
-    void onCollected(@NonNull String str);
-}

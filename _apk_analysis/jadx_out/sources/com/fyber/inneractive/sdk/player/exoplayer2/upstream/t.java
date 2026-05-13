@@ -1,9 +1,0 @@
-package com.fyber.inneractive.sdk.player.exoplayer2.upstream;
-
-/* JADX INFO: loaded from: classes11.dex */
-public final class t implements g {
-    @Override // com.fyber.inneractive.sdk.player.exoplayer2.upstream.g
-    public final h a() {
-        return new s(null);
-    }
-}

@@ -1,6 +1,0 @@
-package com.mbridge.msdk.foundation.download.download;
-
-/* JADX INFO: loaded from: classes12.dex */
-public interface DownLoadTaskSelfProgressListener {
-    void onProgress(long j10, int i10);
-}

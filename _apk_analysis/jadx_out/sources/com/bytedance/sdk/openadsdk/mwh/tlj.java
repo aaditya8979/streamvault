@@ -1,8 +1,0 @@
-package com.bytedance.sdk.openadsdk.mwh;
-
-/* JADX INFO: loaded from: classes10.dex */
-public interface tlj {
-    void ouw();
-
-    void vt();
-}
