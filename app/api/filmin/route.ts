@@ -155,16 +155,21 @@ export async function GET(req: NextRequest) {
           let match = typeMatches[0] || searchResults[0];
           for (const candidate of typeMatches) {
             try {
-              const info = await client.getStreamInfo(candidate.id, audioType);
+              // CRITICAL: Use getVodInfo (Web API) here, NOT getStreamInfo (P2P)
+              // This allows TMDB resolution to work on Vercel without a VPS
+              const info = await client.getVodInfo(candidate.id, audioType);
               const ep1 = info.vod_collection[0];
-              if (ep1 && ep1.vod_url.includes(".m3u8")) {
+              if (ep1 && ep1.vod_url && (ep1.vod_url.includes(".m3u8") || ep1.vod_url.startsWith("http"))) {
                 match = candidate;
-                break; // Found an HLS source — use it
+                console.log(`[filmin/tmdb] Found playable match: ${candidate.vod_name} (id=${candidate.id})`);
+                break; // Found a source — use it
               }
-            } catch { /* skip failed lookups */ }
+            } catch (err) { 
+              console.warn(`[filmin/tmdb] Candidate ${candidate.id} check failed:`, (err as Error).message);
+            }
           }
 
-          if (!match) return NextResponse.json({ error: "Content not found on Filmin" }, { status: 404 });
+          if (!match) return NextResponse.json({ error: "Content not found on Filmin (no playable matches found via Web API)" }, { status: 404 });
           filminId = match.id;
         } else {
           filminId = parseInt(id, 10);
@@ -181,24 +186,31 @@ export async function GET(req: NextRequest) {
         // 1. Try web API (info_web_get) — no P2P server required
         try {
           detail = await client.getVodInfo(filminId, audioType || 1);
-          console.log(`[filmin/play] Web API success for vod=${filminId}`);
+          const hasEps = (detail?.vod_collection?.length || 0) > 0;
+          console.log(`[filmin/play] Web API result for vod=${filminId}: code=${detail?.code} eps=${detail?.vod_collection?.length}`);
+          if (hasEps) {
+            console.log(`[filmin/play] Web API Sample URL: ${detail?.vod_collection[0]?.vod_url?.substring(0, 50)}...`);
+          }
         } catch (webErr) {
-          console.warn(`[filmin/play] Web API failed:`, (webErr as Error).message);
+          console.warn(`[filmin/play] Web API failed for vod=${filminId}:`, (webErr as Error).message);
         }
 
         // 2. If web API failed or returned no episodes, try P2P-signed API
         if (!detail?.vod_collection?.length) {
           try {
+            console.log(`[filmin/play] Falling back to P2P API for vod=${filminId}...`);
             detail = await client.getStreamInfo(filminId, audioType || 1);
             usedP2P = true;
             console.log(`[filmin/play] P2P API success for vod=${filminId}`);
           } catch (p2pErr) {
             console.warn(`[filmin/play] P2P API also failed:`, (p2pErr as Error).message);
+            // Re-throw the web error if P2P also failed, or provide a combined message
+            throw new Error(`Filmin failed (Web: No sources, P2P: ${(p2pErr as Error).message})`);
           }
         }
 
         if (!detail?.vod_collection?.length) {
-          return NextResponse.json({ error: "No stream sources found (both web and P2P failed)" }, { status: 502 });
+          return NextResponse.json({ error: "No stream sources found on Filmin (Web API returned empty and P2P failed)" }, { status: 502 });
         }
 
         const episode = detail.vod_collection.find((e) => e.collection === epNum) || detail.vod_collection[0];
@@ -214,10 +226,14 @@ export async function GET(req: NextRequest) {
         const isHLS = rawCdnUrl.includes(".m3u8");
 
         if (usedP2P) {
-          // P2P path: route through P2P server proxy
+          // P2P path: route through P2P server proxy (localhost:7000)
           streamUrl = FilminClient.getStreamUrl(rawCdnUrl);
         } else {
-          // Direct CDN path: proxy through our own HLS route
+          // Direct CDN path: If it's a placeholder (p2p://), we can't play it without P2P
+          if (rawCdnUrl.startsWith("p2p://")) {
+            console.warn(`[filmin/play] Web API returned P2P placeholder: ${rawCdnUrl}`);
+            return NextResponse.json({ error: "Filmin returned a P2P-only link. This content requires a local P2P server." }, { status: 502 });
+          }
           streamUrl = rawCdnUrl;
         }
 

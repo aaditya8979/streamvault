@@ -344,6 +344,7 @@ export default function WatchClient({
   const [filminAudioOptions, setFilminAudioOptions] = useState<{type:number;type_name:string}[]>([]);
   const [filminAudioType, setFilminAudioType] = useState(0);
   const [filminLoading, setFilminLoading] = useState(false);
+  const [filminError, setFilminError] = useState<string | null>(null);
   const [filminEmbeddedTracks, setFilminEmbeddedTracks] = useState<{
     audio: { index: number; lang: string; label: string; codec: string }[];
     subtitles: { index: number; lang: string; label: string }[];
@@ -353,15 +354,28 @@ export default function WatchClient({
   useEffect(() => {
     if (provider !== "filmin") return;
     setFilminLoading(true);
+    setFilminError(null);
     const ep = type === "tv" ? episode : 1;
     fetch(`/api/filmin?action=play&id=${id}&type=${type}&ep=${ep}&audio=${filminAudioType}&tmdb=1&format=json`)
       .then(r => r.json())
       .then(data => {
-        if (data.stream_url) setFilminStreamUrl(data.stream_url);
+        if (data.stream_url) {
+          setFilminStreamUrl(data.stream_url);
+          setFilminError(null);
+        } else if (data.error) {
+          setFilminStreamUrl(null);
+          setFilminError(data.error);
+        } else {
+          setFilminStreamUrl(null);
+          setFilminError("Unknown error occurred");
+        }
         if (data.audio_options) setFilminAudioOptions(data.audio_options);
         if (data.embedded_tracks) setFilminEmbeddedTracks(data.embedded_tracks);
       })
-      .catch(() => setFilminStreamUrl(null))
+      .catch((err) => {
+        setFilminStreamUrl(null);
+        setFilminError(err.message || "Failed to fetch stream");
+      })
       .finally(() => setFilminLoading(false));
   }, [provider, id, type, season, episode, filminAudioType]);
 
@@ -467,10 +481,14 @@ export default function WatchClient({
                 embeddedTracks={filminEmbeddedTracks}
               />
             ) : (
-              <div className="aspect-video bg-zinc-950 flex flex-col items-center justify-center gap-3">
+              <div className="aspect-video bg-zinc-950 flex flex-col items-center justify-center gap-3 px-6 text-center">
                 <AlertTriangle className="w-8 h-8 text-yellow-500" />
-                <p className="text-white text-sm">Filmin P2P not available</p>
-                <p className="text-zinc-500 text-xs">Start the Android emulator or try another server</p>
+                <p className="text-white text-sm font-medium">{filminError || "Filmin P2P not available"}</p>
+                <p className="text-zinc-500 text-xs max-w-md">
+                  {filminError?.includes("403") || filminError?.includes("blocked") 
+                    ? "Filmin has blocked this server's IP. Try using a VPN or local P2P server." 
+                    : "This content might be unavailable on the web API. Try another server below."}
+                </p>
               </div>
             )
           ) : (
