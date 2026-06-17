@@ -151,18 +151,10 @@ export async function GET(req: NextRequest) {
             return rType === type && (r.vod_name.includes(title) || title.includes(r.vod_name));
           });
 
-          // Try each match — pick the first one with m3u8 CDN URLs
-          let match = typeMatches[0] || searchResults[0];
-          for (const candidate of typeMatches) {
-            try {
-              const info = await client.getStreamInfo(candidate.id, audioType);
-              const ep1 = info.vod_collection[0];
-              if (ep1 && ep1.vod_url.includes(".m3u8")) {
-                match = candidate;
-                break; // Found an HLS source — use it
-              }
-            } catch { /* skip failed lookups */ }
-          }
+          // Pick the best match by name similarity — the Web API only returns
+          // placeholder URLs so we can't filter by stream availability here.
+          // The actual CDN URL comes from getStreamInfo (P2P) later.
+          const match = typeMatches[0] || searchResults[0];
 
           if (!match) return NextResponse.json({ error: "Content not found on Filmin" }, { status: 404 });
           filminId = match.id;
@@ -173,16 +165,40 @@ export async function GET(req: NextRequest) {
         // Discover all audio options via web API (reveals dub tracks the P2P API hides)
         const allAudioOptions = await client.getAudioOptions(filminId);
         
-        // Fetch stream info for the requested audio type
-        const detail = await client.getStreamInfo(filminId, audioType || 1);
+        // Strategy: P2P-first — the Web API only returns placeholder URLs.
+        // Real CDN URLs require the P2P signing server (Oracle VM / Android emulator).
+        let detail: Awaited<ReturnType<typeof client.getStreamInfo>> | null = null;
+
+        try {
+          detail = await client.getStreamInfo(filminId, audioType || 1);
+          console.log(`[filmin/play] P2P stream info OK for vod=${filminId}, eps=${detail?.vod_collection?.length}`);
+        } catch (p2pErr) {
+          const errMsg = (p2pErr as Error).message;
+          console.error(`[filmin/play] P2P failed for vod=${filminId}:`, errMsg);
+          
+          // Provide a specific, actionable error
+          const isConnectionError = errMsg.includes("fetch failed") || errMsg.includes("ECONNREFUSED") || errMsg.includes("timeout");
+          const errorDetail = isConnectionError
+            ? `P2P server not reachable at ${process.env.FILMIN_P2P_HOST || "127.0.0.1"}:${process.env.FILMIN_P2P_PORT || "7000"}. Set FILMIN_P2P_HOST in Vercel env vars.`
+            : `P2P signing failed: ${errMsg}`;
+          
+          return NextResponse.json({ error: errorDetail }, { status: 502 });
+        }
+
+        if (!detail?.vod_collection?.length) {
+          return NextResponse.json({ error: "No episodes found for this content on Filmin" }, { status: 404 });
+        }
+
         const episode = detail.vod_collection.find((e) => e.collection === epNum) || detail.vod_collection[0];
         
         if (!episode) {
           return NextResponse.json({ error: `Episode ${epNum} not found` }, { status: 404 });
         }
 
+        // Route through P2P proxy server
         const streamUrl = FilminClient.getStreamUrl(episode.vod_url);
-        const isHLS = episode.vod_url.includes(".m3u8");
+        const rawCdnUrl = episode.vod_url;
+        const isHLS = rawCdnUrl.includes(".m3u8");
 
         // Probe embedded tracks from the MP4 container — NON-BLOCKING for fast startup
         let embeddedTracks: { audio: { index: number; lang: string; label: string; codec: string }[]; subtitles: { index: number; lang: string; label: string }[] } = { audio: [], subtitles: [] };
@@ -192,8 +208,8 @@ export async function GET(req: NextRequest) {
         if (cached) {
           embeddedTracks = cached;
         } else if (!isHLS && streamUrl) {
-          // Fire probe in background — don't block the response
-          FilminClient.probeMP4Tracks(streamUrl).then(tracks => {
+          const probeUrl = `/api/filmin/hls?url=${encodeURIComponent(streamUrl)}`;
+          FilminClient.probeMP4Tracks(probeUrl).then(tracks => {
             if (!g.__trackCache) g.__trackCache = {};
             g.__trackCache[probeKey] = tracks;
             console.log(`[filmin/play] Background probe found ${tracks.audio.length} audio, ${tracks.subtitles.length} subs`);
@@ -201,6 +217,9 @@ export async function GET(req: NextRequest) {
             console.error("[filmin/play] Background probe failed:", (e as Error).message);
           });
         }
+
+        // Always wrap through our proxy for CORS
+        const proxiedUrl = `/api/filmin/hls?url=${encodeURIComponent(streamUrl)}`;
 
         // If format=json, return JSON; otherwise redirect to stream
         const format = req.nextUrl.searchParams.get("format");
@@ -210,8 +229,8 @@ export async function GET(req: NextRequest) {
             filmin_id: filminId,
             episode: epNum,
             duration: episode.duration,
-            cdn_url: episode.vod_url,
-            stream_url: `/api/filmin/hls?url=${encodeURIComponent(streamUrl)}`,
+            cdn_url: rawCdnUrl,
+            stream_url: proxiedUrl,
             audio_options: allAudioOptions,
             audio_language_tag: detail.audio_language_tag || "",
             embedded_tracks: embeddedTracks,
@@ -219,7 +238,7 @@ export async function GET(req: NextRequest) {
         }
 
         // Redirect to stream URL
-        return NextResponse.redirect(streamUrl);
+        return NextResponse.redirect(proxiedUrl);
       }
 
       case "status": {

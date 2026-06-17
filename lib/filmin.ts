@@ -277,9 +277,13 @@ export class FilminClient {
       headers: this.makeWebHeaders(),
     });
 
+    if (!resp.ok) {
+      throw new Error(`Web API HTTP error: ${resp.status} ${resp.statusText}`);
+    }
+
     const raw = await resp.text();
     if (!raw || raw === "error1" || !raw.match(/^[A-Za-z0-9+/=\s]+$/)) {
-      throw new Error(`Web API error: ${raw || "empty response"}`);
+      throw new Error(`Web API format error: ${raw || "empty response"} (likely blocked or invalid sign)`);
     }
 
     const decrypted = aesDecrypt(raw.trim());
